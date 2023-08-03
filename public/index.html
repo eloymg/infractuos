@@ -3,14 +3,13 @@
 
 <head>
 	<script src="/external/phaser.min.js"></script>
-	<script src="/socket.io/socket.io.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="/classes.js"></script>
 </head>
 
 <body>
 	<script></script>
 	<script>
-		const socket = io();
 		const screen_width = 700;
 		const screen_height = 500;
 		const tile_size = 16;
@@ -61,6 +60,10 @@
 					"computer",
 					"assets/aws_assets/curated_list/compute.png"
 				);
+				this.load.image(
+					"loadBalancer",
+					"assets/aws_assets/curated_list/loadBalancer.png"
+				);
 				this.activeObjectText = this.add.text(10, 10, "undefined", {
 					fontSize: "10px",
 					fill: "#fff",
@@ -99,22 +102,26 @@
 				this.generator = new Generator(this);
 				this.generator.startGeneration();
 				this.createComputeGenerationButton();
+				this.loadBalancer = new LoadBalancer(this);
 				this.input.on("drag", (pointer, gameObject, dragX, dragY) => {
 					gameObject.x = dragX;
 					gameObject.y = dragY;
 					if (
-						(gameObject.connection != undefined) &
+						(gameObject.connections.length > 0) &
 						(gameObject != undefined)
 					) {
-						gameObject.connection.clear();
-						gameObject.connection.lineBetween(
-							dragX,
-							dragY,
-							gameObject.connected_object.getCenter().x,
-							gameObject.connected_object.getCenter().y
-						);
+						gameObject.connections.forEach(function (connection) {
+							connection.sprite.clear()
+							connection.sprite.lineBetween(
+								dragX,
+								dragY,
+								connection.object.getCenter().x,
+								connection.object.getCenter().y
+							);
+						})
 					}
-				});
+				}
+				);
 				this.input.on("pointerdown", (pointer, gameObject, dragX, dragY) => {
 					if (gameObject[0] == undefined) {
 						this.activeObject = undefined;
@@ -137,201 +144,40 @@
 				} else {
 					this.activeObjectText.setText("No active Object");
 				}
-				if (
-					(this.oldActiveObject instanceof Computer) &
-					!(this.activeObject instanceof Computer)
-				) {
+				if ((this.activeObject === undefined | this.activeObject instanceof Generator) & (this.oldActiveObject instanceof MachineWithComputing)){
 					this.oldActiveObject.deleteShowCpu();
 				}
-				if (this.activeObject instanceof Computer) {
+				if (this.activeObject instanceof MachineWithComputing) {
+					if (
+						!(this.oldActiveObject == this.activeObject) &
+						(this.oldActiveObject instanceof MachineWithComputing)
+					) {
+						this.oldActiveObject.deleteShowCpu();
+					}
 					if (!this.activeObject.chart) {
 						this.activeObject.showCpu();
 					}
 				}
-				if (this.generator.connected_object) {
+				if (this.generator.connections.length > 0) {
 					this.generator.tryToSend();
 				}
 				this.computers.children.entries.forEach((computer) => {
 					computer.processPacket();
 				});
+				this.loadBalancer.processPacket();
 				let expired = 0;
 				let active = 0;
 				this.inactivePacketsNumber.setText(
-					String(this.generator.packets.getMatching("expired", true).length)
+					String(this.generator.packetsGroup.getMatching("expired", true).length)
 				);
 				this.activePacketsNumber.setText(
-					String(this.generator.packets.getMatching("expired", false).length)
+					String(this.generator.packetsGroup.getMatching("expired", false).length)
 				);
 				this.scoreNumber.setText(String(this.score))
 				this.oldActiveObject = this.activeObject;
 			}
 		}
 
-		class Packet extends Phaser.GameObjects.GameObject {
-			constructor(scene) {
-				super(scene, "packet");
-				this.scene = scene
-				this.size = Math.random() * 30;
-				this.timeout = 3;
-				this.expired = false;
-				this.delayedCall = scene.time.delayedCall(this.timeout * 1000, this.expire.bind(this));
-				this.on("destroy", this.destroyAndClean);
-			}
-			expire() {
-				this.expired = true;
-			}
-			destroyAndClean() {
-				console.log("destroyed");
-				this.delayedCall.destroy()
-				if (!this.expired) {
-					this.scene.score += 1
-				}
-			}
-		}
-		class Machine extends Phaser.GameObjects.Sprite {
-			constructor(scene, image_id, x, y) {
-				super(scene, x, y, image_id);
-				scene.add.existing(this);
-				this.setInteractive();
-				scene.input.setDraggable(this);
-				this.on("pointerup", () => {
-					if (
-						(scene.activeObject != undefined) &
-						(scene.activeObject != this)
-					) {
-						if (!scene.activeObject.connection && !this.connection) {
-							scene.activeObject.connect(this);
-						}
-					}
-					scene.activeObject = this;
-				});
-				this.scene = scene;
-				return this;
-			}
-			connect(obj) {
-				this.connection = this.scene.add.graphics({
-					lineStyle: { width: 4, color: 0xaa00aa },
-				});
-				this.connection.lineBetween(
-					this.getCenter().x,
-					this.getCenter().y,
-					obj.getCenter().x,
-					obj.y
-				);
-				obj.connection = this.connection;
-				this.connected_object = obj;
-				obj.connected_object = this;
-			}
-		}
-
-		class Generator extends Machine {
-			constructor(scene) {
-				super(scene, "end_user", 100, 200);
-				this.scene = scene;
-				this.packets = scene.add.group(this);
-				this.packetsBuffer = [];
-				this.id = "generator";
-				if (typeof Generator.instance === "object") {
-					return Generator.instance;
-				}
-				Generator.instance = this;
-				return this;
-			}
-			createPacket() {
-				let packet = new Packet(this.scene, this);
-				this.packets.add(packet);
-				this.packetsBuffer.push(packet);
-			}
-			startGeneration() {
-				setInterval(this.createPacket.bind(this), 200);
-			}
-			tryToSend() {
-				this.packetsBuffer.forEach((element) => {
-					this.connected_object.packets.push(element);
-				});
-				this.packetsBuffer = [];
-			}
-		}
-		class Computer extends Machine {
-			constructor(scene) {
-				super(scene, "computer", 600, 100);
-				this.scene = scene;
-				this.id = "computer";
-				this.cpu = 0;
-				this.chartData = [0, 0, 0, 0, 0];
-				this.packets = [];
-				return this;
-			}
-			processPacket() {
-				if (this.packets.length > 0) {
-					let finalCpu = this.cpu + this.packets[0].size;
-					if (finalCpu < 100) {
-						let packet = this.packets.shift();
-						this.cpu += packet.size;
-						this.scene.time.delayedCall(packet.size * 50, this.process.bind(this), [
-							packet,
-						]);
-					}
-				}
-			}
-			process(packet) {
-				this.cpu -= packet.size;
-				packet.destroy();
-			}
-			showCpu() {
-				this.chart = new Chart(
-					document.getElementById("chart").getContext("2d"),
-					{
-						type: "line",
-						data: {
-							labels: [1, 2, 3, 4, 5],
-							datasets: [
-								{
-									label: "CPU",
-									data: this.chartData,
-									borderWidth: 1,
-								},
-							],
-						},
-						options: {
-							scales: {
-								y: {
-									min: 0,
-									max: 100,
-									offset: true,
-								},
-								x: {
-									grid: {
-										display: true,
-										offset: true,
-									},
-								},
-							},
-						},
-					}
-				);
-				this.scene.add.dom(320, 320, "#chart-wrapper").setOrigin(0);
-				this.updateLoop = setInterval(this.chartUpdate.bind(this), 1000);
-			}
-			chartUpdate() {
-				this.chartData.shift();
-				this.chartData.push(this.cpu);
-				this.chart.data.datasets[0].data = this.chartData;
-				this.chart.update();
-			}
-			deleteShowCpu() {
-				this.chart.destroy();
-				this.chart = undefined;
-				clearInterval(this.updateLoop);
-			}
-		}
-
-		// socket.on('updateState', function (obj) {
-		// 	last_update_received = obj;
-		// });
-		// socket.on('playerCount', function (obj) {
-		// 	player_count = obj;
-		// })
 		const config = {
 			type: Phaser.AUTO,
 			width: screen_width,
@@ -342,28 +188,7 @@
 		var game = new Phaser.Game(config);
 		var self;
 
-      // window.addEventListener('keydown', function (e) {
-      // 	let direction = "none";
-      // 	if (e.key == "w") {
-      // 		direction = "up";
-      // 	}
-      // 	else if (e.key == "s") {
-      // 		direction = "down";
-      // 	}
-      // 	else if (e.key == "a") {
-      // 		direction = "left";
-      // 	}
-      // 	else if (e.key == "d") {
-      // 		direction = "right";
-      // 	}
-      // 	else {
-      // 		console.log(e.key);
-      // 		return;
-      // 	}
 
-      // 	socket.emit("add_action", { type: "moveBug", direction });
-
-      // }, false);
 	</script>
 	<div id="chart-wrapper" class="chart" style="height: 170px; width: 350px; background-color: white">
 		<canvas id="chart"></canvas>
