@@ -1,9 +1,6 @@
-# eatplants
+# infractuos
 
 ## How to run
 
     docker compose up
-
-or
-
-    node server.js
+    go http://localhost:8000/
