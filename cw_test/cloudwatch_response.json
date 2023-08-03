@@ -1,0 +1,20 @@
+{
+  "Defaults": {
+    "ListElement": false,
+    "Period": 300,
+    "Stat": "Average",
+    "StatusCode": "Complete",
+    "Timestamps": [1.6910592e9]
+  },
+  "Messages": [],
+  "MetricData": [
+    {
+      "AccountId": "052943075217",
+      "Alias": "metric_alias_widget_15_0",
+      "Label": "i-06c027fd4d85a0c04",
+      "ListElement": false,
+      "Unit": "Percent",
+      "Values": [5.416991866535104]
+    }
+  ]
+}
