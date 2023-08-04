@@ -10,8 +10,8 @@
 <body>
 	<script></script>
 	<script>
-		const screen_width = 700;
-		const screen_height = 500;
+		const screen_width = 1000;
+		const screen_height = 700;
 		const tile_size = 16;
 		const tile_scale = 0.065;
 		const gameStarted = false;
@@ -53,17 +53,30 @@
 					frameHeight: 23.5,
 				});
 				this.load.image(
-					"end_user",
-					"assets/aws_assets/curated_list/end_user.png"
+					"endUser",
+					"assets/aws_assets/curated_list/endUser.png"
+				);
+				this.load.image(
+					"endUserActive",
+					"assets/aws_assets/curated_list/endUserActive.png"
 				);
 				this.load.image(
 					"computer",
 					"assets/aws_assets/curated_list/compute.png"
 				);
 				this.load.image(
+					"computerActive",
+					"assets/aws_assets/curated_list/computeActive.png"
+				);
+				this.load.image(
 					"loadBalancer",
 					"assets/aws_assets/curated_list/loadBalancer.png"
 				);
+				this.load.image(
+					"loadBalancerActive",
+					"assets/aws_assets/curated_list/loadBalancerActive.png"
+				);
+
 				this.publishWebsite = this.add.text(10, 30, "Publish Website", {
 					fontSize: "10px",
 					fill: "#fff",
@@ -78,8 +91,8 @@
 					fontSize: "10px",
 					fill: "#fff",
 				});
-				this.activeObjectText = this.add.text(10, 10, "undefined", {
-					fontSize: "10px",
+				this.activeObjectText = this.add.text(470, 420, "undefined", {
+					fontSize: "14px",
 					fill: "#fff",
 				});
 				this.scoreText = this.add.text(250, 10, "Score:", {
@@ -90,6 +103,15 @@
 					fontSize: "10px",
 					fill: "#fff",
 				});
+				this.add.graphics({
+					lineStyle: { width: 4, color: 0xaa00aa },
+				}).lineBetween(
+					0,
+					400,
+					1000,
+					400
+				);
+
 			}
 
 			create() {
@@ -98,26 +120,28 @@
 				this.createComputeGenerationButton();
 				this.loadBalancer = new LoadBalancer(this);
 				this.input.on("drag", (pointer, gameObject, dragX, dragY) => {
-					gameObject.x = dragX;
-					gameObject.y = dragY;
-					if (
-						(gameObject.connections.length > 0) &
-						(gameObject != undefined)
-					) {
-						gameObject.connections.forEach(function (connection) {
-							connection.sprite.clear()
-							connection.sprite.lineBetween(
-								dragX,
-								dragY,
-								connection.object.getCenter().x,
-								connection.object.getCenter().y
-							);
-						})
+					if (dragY < 360) {
+						gameObject.x = dragX;
+						gameObject.y = dragY;
+						if (
+							(gameObject.connections.length > 0) &
+							(gameObject != undefined)
+						) {
+							gameObject.connections.forEach(function (connection) {
+								connection.sprite.clear()
+								connection.sprite.lineBetween(
+									dragX,
+									dragY,
+									connection.object.getCenter().x,
+									connection.object.getCenter().y
+								);
+							})
+						}
 					}
 				}
 				);
-				this.input.on("pointerdown", (pointer, gameObject, dragX, dragY) => {
-					if (gameObject[0] == undefined) {
+				this.input.on("pointerdown", (pointer, currentlyOver) => {
+					if (currentlyOver[0] == undefined) {
 						this.activeObject = undefined;
 					}
 				});
@@ -166,9 +190,17 @@
 				if (this.generator.connections.length > 0) {
 					this.generator.tryToSend();
 				}
-
+				if (this.activeObject != this.loadBalancer){
+					this.loadBalancer.setInactive()
+					}
+				if (this.activeObject != this.generator){
+					this.generator.setInactive()
+					}
 				this.loadBalancer.processPackets();
 				this.computers.children.entries.forEach((computer) => {
+					if (this.activeObject != computer){
+						computer.setInactive()
+					}
 					computer.processPackets();
 				});
 				this.scoreNumber.setText(String(this.score))
@@ -189,7 +221,7 @@
 
 
 	</script>
-	<div id="chart-wrapper" class="chart" style="height: 170px; width: 350px; background-color: white">
+	<div id="chart-wrapper" class="chart" style="height: 220px; width: 500px; background-color: white" hidden>
 		<canvas id="chart"></canvas>
 	</div>
 </body>

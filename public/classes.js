@@ -25,6 +25,7 @@ class Packet extends Phaser.GameObjects.GameObject {
 class Machine extends Phaser.GameObjects.Sprite {
     constructor(scene, image_id, x, y, max_connections) {
         super(scene, x, y, image_id);
+        this.image_id = image_id
         this.max_connections = max_connections;
         scene.add.existing(this);
         this.setInteractive();
@@ -41,6 +42,7 @@ class Machine extends Phaser.GameObjects.Sprite {
                 }
             }
             scene.activeObject = this;
+            this.setTexture(image_id+"Active");
         });
         this.scene = scene;
         return this;
@@ -82,11 +84,14 @@ class Machine extends Phaser.GameObjects.Sprite {
 
         }
     }
+    setInactive(){
+        this.setTexture(this.image_id);
+    }
 }
 
 class Generator extends Machine {
     constructor(scene) {
-        super(scene, "end_user", 100, 200, 1);
+        super(scene, "endUser", 100, 200, 1);
         this.scene = scene;
         this.packetsGroup = scene.add.group(this);
         this.packets = [];
@@ -180,7 +185,7 @@ class MachineWithComputing extends Machine {
                 },
             },
         });
-        this.scene.add.dom(320, 320, "#chart-wrapper").setOrigin(0);
+        this.scene.add.dom(470, 460, "#chart-wrapper").setOrigin(0);
         this.updateLoop = setInterval(this.chartUpdate.bind(this), 250);
     }
     chartUpdate() {
@@ -200,7 +205,6 @@ class Computer extends MachineWithComputing {
         super(scene, "computer", 600, 100, 1, 100);
         this.id = "Computer"
         this.scene = scene;
-        return this;
     }
     compute(packet) {
         let cost = Math.floor(Math.random() * 5);
@@ -215,6 +219,8 @@ class Computer extends MachineWithComputing {
         this.cpu -= cost;
         packet.destroy();
     }
+
+
 }
 
 class LoadBalancer extends MachineWithComputing {
