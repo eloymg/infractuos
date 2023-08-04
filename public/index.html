@@ -74,7 +74,7 @@
 					fill: "#fff",
 				});
 				this.incriseTraffic.setInteractive();
-				this.trafficRate = this.add.text(10, 70, 0, {
+				this.trafficRateNumber = this.add.text(10, 70, 0, {
 					fontSize: "10px",
 					fill: "#fff",
 				});
@@ -121,11 +121,11 @@
 						this.activeObject = undefined;
 					}
 				});
-				this.publishWebsite.on("pointerdown",() => {
+				this.publishWebsite.on("pointerdown", () => {
 					this.publishWebsite.destroy()
 					this.generator.startGeneration();
 				})
-				this.incriseTraffic.on("pointerdown",() => {
+				this.incriseTraffic.on("pointerdown", () => {
 					this.generator.incriseTraffic()
 				})
 			}
@@ -137,9 +137,9 @@
 				this.computers = this.add.group(this);
 				button.on("pointerup", () => {
 					if (this.score >= 1000) {
-					this.computers.add(new Computer(this));
-					this.score-=1000
-					}	
+						this.computers.add(new Computer(this));
+						this.score -= 1000
+					}
 
 				});
 			}
@@ -149,7 +149,7 @@
 				} else {
 					this.activeObjectText.setText("No active Object");
 				}
-				if ((this.activeObject === undefined | this.activeObject instanceof Generator) & (this.oldActiveObject instanceof MachineWithComputing)){
+				if ((this.activeObject === undefined | this.activeObject instanceof Generator) & (this.oldActiveObject instanceof MachineWithComputing)) {
 					this.oldActiveObject.deleteShowCpu();
 				}
 				if (this.activeObject instanceof MachineWithComputing) {
@@ -166,12 +166,13 @@
 				if (this.generator.connections.length > 0) {
 					this.generator.tryToSend();
 				}
+
+				this.loadBalancer.processPackets();
 				this.computers.children.entries.forEach((computer) => {
-					computer.processPacket();
+					computer.processPackets();
 				});
-				this.loadBalancer.processPacket();
 				this.scoreNumber.setText(String(this.score))
-				this.trafficRate.setText(String(this.generator.trafficRate))
+				this.trafficRateNumber.setText(String(this.generator.trafficRate))
 				this.oldActiveObject = this.activeObject;
 			}
 		}
