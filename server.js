@@ -11,7 +11,12 @@ const port = 8000;
 // const game = new Game();
 
 app.use(express.static('public'));
-
+var cors = require('cors')
+var corsOptions = {
+  origin: '*',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+app.use(cors(corsOptions))
 // io.on('connection', (socket) => {
 
 //   game.addPlayer(socket.id);

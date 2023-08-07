@@ -2,35 +2,33 @@
 <html>
 
 <head>
+	<link rel="stylesheet" href="styles.css">
+	<link rel="preload" href="assets/fonts/GNUUnifonts.ttf" as="font" type="font/ttf" crossorigin>
 	<script src="external/phaser.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script src="classes.js"></script>
+
 </head>
 
 <body>
-	<script></script>
-	<script>
-		const screen_width = 1000;
-		const screen_height = 700;
-		const tile_size = 16;
-		const tile_scale = 0.065;
-		const gameStarted = false;
-		let current_sprites = [];
-		let last_update_received = {};
-		let player_count = 0;
+	<script defer>
+		const screen_width = 900;
+		const screen_height = 600;
 		class WelcomeScene extends Phaser.Scene {
+
 			constructor() {
 				super({ key: "WelcomeScene" });
 			}
 
-			preload() { }
+			preload() {
+				this.welcomeText = this.add.text(10, 10, "Click here to start!", {
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
+				// this.welcomeText.setResolution(1000)
+				this.welcomeText.setInteractive();
+			}
 
 			create() {
-				this.welcomeText = this.add.text(10, 10, "Click here to start!", {
-					fontSize: "10px",
-					fill: "#fff",
-				});
-				this.welcomeText.setInteractive();
 			}
 			update() {
 				this.welcomeText.on("pointerdown", () => {
@@ -78,31 +76,31 @@
 				);
 
 				this.publishWebsite = this.add.text(10, 30, "Publish Website", {
-					fontSize: "10px",
-					fill: "#fff",
-				});
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
 				this.publishWebsite.setInteractive();
-				this.incriseTraffic = this.add.text(10, 50, "Incrise Traffic", {
-					fontSize: "10px",
-					fill: "#fff",
-				});
+				this.incriseTraffic = this.add.text(10, 50, "Increase Traffic", {
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
 				this.incriseTraffic.setInteractive();
 				this.trafficRateNumber = this.add.text(10, 70, 0, {
-					fontSize: "10px",
-					fill: "#fff",
-				});
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
 				this.activeObjectText = this.add.text(470, 420, "undefined", {
-					fontSize: "14px",
-					fill: "#fff",
-				});
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
 				this.scoreText = this.add.text(250, 10, "Score:", {
-					fontSize: "10px",
-					fill: "#fff",
-				});
-				this.scoreNumber = this.add.text(290, 10, String(0), {
-					fontSize: "10px",
-					fill: "#fff",
-				});
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
+				this.scoreNumber = this.add.text(300, 10, String(0), {
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
+
+				this.date = new Date("2023-08-07T00:00:00");
+				this.dateText = this.add.text(700, 10, this.date.toString(), {
+					fontFamily: 'GNUUnifonts'
+				}).setResolution(10);
+
 				this.add.graphics({
 					lineStyle: { width: 4, color: 0xaa00aa },
 				}).lineBetween(
@@ -190,32 +188,36 @@
 				if (this.generator.connections.length > 0) {
 					this.generator.tryToSend();
 				}
-				if (this.activeObject != this.loadBalancer){
+				if (this.activeObject != this.loadBalancer) {
 					this.loadBalancer.setInactive()
-					}
-				if (this.activeObject != this.generator){
+				}
+				if (this.activeObject != this.generator) {
 					this.generator.setInactive()
-					}
+				}
 				this.loadBalancer.processPackets();
 				this.computers.children.entries.forEach((computer) => {
-					if (this.activeObject != computer){
+					if (this.activeObject != computer) {
 						computer.setInactive()
 					}
 					computer.processPackets();
 				});
 				this.scoreNumber.setText(String(this.score))
 				this.trafficRateNumber.setText(String(this.generator.trafficRate))
+				this.dateText.setText(this.date.toString())
 				this.oldActiveObject = this.activeObject;
 			}
 		}
 
 		const config = {
-			type: Phaser.AUTO,
+			type: Phaser.WEBGL,
 			width: screen_width,
 			height: screen_height,
 			backgroundColor: "#9b9b9b",
+			parent: 'phaser-example',
 			scene: [WelcomeScene, GameScene],
+			mode: Phaser.Scale.RESIZE
 		};
+
 		var game = new Phaser.Game(config);
 		var self;
 
@@ -227,5 +229,3 @@
 </body>
 
 </html>
-
-<div class="cwdb-chart-container-background cwdb-widget-polaris cwdb-widget-polaris-border-radius"></div>

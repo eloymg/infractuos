@@ -2,7 +2,7 @@ class Packet extends Phaser.GameObjects.GameObject {
     constructor(scene) {
         super(scene, "packet");
         this.scene = scene;
-        this.size = Math.random() * 30;
+        this.size = 1;
         this.timeout = 10;
         this.expired = false;
         this.delayedCall = this.scene.time.delayedCall(
@@ -42,7 +42,7 @@ class Machine extends Phaser.GameObjects.Sprite {
                 }
             }
             scene.activeObject = this;
-            this.setTexture(image_id+"Active");
+            this.setTexture(image_id + "Active");
         });
         this.scene = scene;
         return this;
@@ -84,7 +84,7 @@ class Machine extends Phaser.GameObjects.Sprite {
 
         }
     }
-    setInactive(){
+    setInactive() {
         this.setTexture(this.image_id);
     }
 }
@@ -96,15 +96,21 @@ class Generator extends Machine {
         this.packetsGroup = scene.add.group(this);
         this.packets = [];
         this.id = "generator";
-        this.trafficRate = 1000;
+        this.trafficRate = 1;
         if (typeof Generator.instance === "object") {
             return Generator.instance;
         }
         Generator.instance = this;
         return this;
+        this.referenceTime = undefined
     }
     createPacket() {
-        for (let i = 0; i < Math.floor(Math.random() * 10); i++) {
+        if (!this.referenceTime) {
+            this.referenceTime = this.scene.time.now
+        }
+        this.scene.date.setMinutes(this.scene.date.getMinutes()+10)
+        console.log((Math.sin(Math.floor(this.scene.time.now - this.referenceTime) / 12000 * Math.PI - 2000) + 1) )
+        for (let i = 0; i < Math.floor(this.trafficRate * (Math.sin(Math.floor(this.scene.time.now - this.referenceTime) / 24000 * Math.PI - 2000) + 1) + (Math.random() * 3)); i++) {
             let packet = new Packet(this.scene);
             this.packetsGroup.add(packet);
             this.packets.push(packet);
@@ -113,17 +119,12 @@ class Generator extends Machine {
     startGeneration() {
         this.interval = this.scene.time.addEvent({
             callback: this.createPacket.bind(this),
-            delay: this.trafficRate,
+            delay: 150,
             loop: true
         })
     }
     incriseTraffic() {
-        this.trafficRate = this.trafficRate - 100;
-        this.interval.reset({
-            callback: this.createPacket.bind(this),
-            delay: this.trafficRate,
-            loop: true
-        })
+        this.trafficRate = this.trafficRate + 1;
     }
 }
 
@@ -133,7 +134,7 @@ class MachineWithComputing extends Machine {
         this.scene = scene;
         this.cpu = 0;
         this.cpuPower = cpuPower;
-        this.chartData = Array.from({ length: 20 }, (x, i) => i);;
+        this.chartData = Array.from({ length: 20 }, (x, i) => 0);;
     }
     processPackets() {
         this.packets.forEach((packet) => {
@@ -186,18 +187,24 @@ class MachineWithComputing extends Machine {
             },
         });
         this.scene.add.dom(470, 460, "#chart-wrapper").setOrigin(0);
+        if (this.DataupdateLoop){
+            clearInterval(this.DataupdateLoop)
+        }
+       
+        this.DataupdateLoop = setInterval(this.dataUpdate.bind(this), 500);
         this.updateLoop = setInterval(this.chartUpdate.bind(this), 250);
     }
     chartUpdate() {
-        this.chartData.shift();
-        this.chartData.push(this.cpu);
-        this.chart.data.datasets[0].data = this.chartData;
         this.chart.update();
     }
     deleteShowCpu() {
         this.chart.destroy();
         this.chart = undefined;
         clearInterval(this.updateLoop);
+    }
+    dataUpdate() {
+        this.chartData.shift();
+        this.chartData.push(this.cpu);
     }
 }
 class Computer extends MachineWithComputing {
@@ -207,16 +214,15 @@ class Computer extends MachineWithComputing {
         this.scene = scene;
     }
     compute(packet) {
-        let cost = Math.floor(Math.random() * 5);
-        this.cpu += cost;
+        this.cpu += packet.size;
         this.scene.time.delayedCall(
-            packet.size * this.cpuPower,
+            1000,
             this.process.bind(this),
-            [packet, cost]
+            [packet]
         );
     }
-    process(packet, cost) {
-        this.cpu -= cost;
+    process(packet) {
+        this.cpu -= packet.size;
         packet.destroy();
     }
 
